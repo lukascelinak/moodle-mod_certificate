@@ -339,3 +339,46 @@ function certificate_get_view_actions() {
 function certificate_get_post_actions() {
     return array('received');
 }
+
+/**
+ * Add nodes to myprofile page.
+ *
+ * @param \core_user\output\myprofile\tree $tree Tree object
+ * @param stdClass $user user object
+ * @param bool $iscurrentuser
+ * @param stdClass $course Course object
+ *
+ * @return bool
+ */
+function certificate_myprofile_navigation(core_user\output\myprofile\tree $tree, $user, $iscurrentuser, $course)
+{
+    global $DB, $CFG;
+    require_once('locallib.php');
+
+    if (isguestuser($user)) {
+        // The guest user cannot post, so it is not possible to view any posts.
+        // May as well just bail aggressively here.
+        return false;
+    }
+    $usercertificates = certificate_get_user_issues($user->id);
+    $categorycourt = new core_user\output\myprofile\category('certificates',
+        get_string('modulenameplural', 'mod_certificate'), 'contact');
+    $tree->add_category($categorycourt);
+    if ($usercertificates) {
+        foreach ($usercertificates as $usercertificate) {
+            $certificate = $DB->get_record('certificate', array('id' => $usercertificate->id));
+            $cm = get_coursemodule_from_instance('certificate', $certificate->id, $certificate->course);
+            $context = context_module::instance($cm->id);
+            $certificateprint = certificate_print_user_files($certificate, $user->id, $context->id) . userdate($usercertificate->timecreated);
+            $nodecertificates = new core_user\output\myprofile\node('certificates',
+                $certificate->name, $usercertificate->coursename, null, null, $certificateprint);
+            $categorycourt->add_node($nodecertificates);
+        }
+    } else {
+        $nodecertificates = new core_user\output\myprofile\node('certificates',
+            'nocertificates', get_string('nocertificates', 'mod_certificate'), null, null, '');
+        $categorycourt->add_node($nodecertificates);
+    }
+
+    return true;
+}

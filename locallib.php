@@ -1278,3 +1278,21 @@ function certificate_get_certificate_filename($certificate, $cm, $course) {
 
     return $filename;
 }
+
+/**
+ * Get all user certificates for myprofile node
+ *
+ * @param $userid
+ * @return mixed
+ */
+function certificate_get_user_issues($userid){
+    global $DB;
+    $sql="SELECT ct.id, cti.id as issueid, ct.name as certificatename, c.fullname as coursename, cti.timecreated
+          FROM {certificate_issues} cti 
+          LEFT JOIN {certificate} ct ON cti.certificateid=ct.id 
+          LEFT JOIN {course} c ON ct.course=c.id 
+          WHERE cti.userid = :userid "  ;
+
+    $usercertificates=$DB->get_records_sql($sql,array('userid'=>$userid));
+    return $usercertificates;
+}
